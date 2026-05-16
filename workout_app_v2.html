@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>BODYMAKE TRACKER</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #252525;
+    --push: #e85d26;
+    --pull: #5b4fd4;
+    --legs: #1a9e6a;
+    --sub: #c4a020;
+    --accent: #f0c040;
+    --text: #f0f0f0;
+    --text2: #666;
+    --danger: #e03030;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; min-height: 100vh; max-width: 480px; margin: 0 auto; padding-bottom: 80px; }
+
+  /* HEADER */
+  .header { padding: 52px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; color: var(--accent); }
+  .sync-status { font-size: 10px; color: var(--text2); display: flex; align-items: center; gap: 4px; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--legs); }
+  .sync-dot.syncing { background: var(--accent); animation: pulse 1s infinite; }
+  .sync-dot.error { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+  /* TABS */
+  .tabs { display: flex; padding: 12px 16px; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex-shrink: 0; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-family: 'Noto Sans JP', sans-serif; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .tab.active { border-color: transparent; color: #000; }
+  .tab.active.t-push { background: var(--push); }
+  .tab.active.t-pull { background: var(--pull); }
+  .tab.active.t-legs { background: var(--legs); }
+  .tab.active.t-sub1 { background: var(--sub); }
+  .tab.active.t-sub2 { background: var(--sub); }
+  .tab.active.t-kpi { background: var(--accent); }
+  .tab.active.t-history { background: var(--surface2); color: var(--text); border-color: var(--border); }
+
+  /* SECTIONS */
+  .section { display: none; padding: 0 16px 20px; }
+  .section.active { display: block; }
+
+  /* DAY HEADER */
+  .day-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 14px 16px; border-radius: 12px; }
+  .day-header.push { background: linear-gradient(135deg, #e85d2615, #e85d2603); border: 1px solid #e85d2630; }
+  .day-header.pull { background: linear-gradient(135deg, #5b4fd415, #5b4fd403); border: 1px solid #5b4fd430; }
+  .day-header.legs { background: linear-gradient(135deg, #1a9e6a15, #1a9e6a03); border: 1px solid #1a9e6a30; }
+  .day-header.sub { background: linear-gradient(135deg, #c4a02015, #c4a02003); border: 1px solid #c4a02030; }
+  .day-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; }
+  .day-title.push { color: var(--push); }
+  .day-title.pull { color: var(--pull); }
+  .day-title.legs { color: var(--legs); }
+  .day-title.sub { color: var(--sub); }
+  .day-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .add-exercise-btn { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); font-size: 11px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; }
+
+  /* EXERCISE CARD */
+  .exercise-card { background: var(--surface); border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border); }
+  .exercise-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .exercise-name-wrap { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .exercise-name { font-size: 14px; font-weight: 500; }
+  .exercise-order { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--text2); flex-shrink: 0; }
+  .exercise-target { font-size: 11px; color: #444; margin-bottom: 12px; }
+  .exercise-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .input-group label { font-size: 10px; color: var(--text2); display: block; margin-bottom: 4px; text-align: center; }
+  .input-group input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 4px; color: var(--text); font-size: 16px; font-family: 'Noto Sans JP', sans-serif; text-align: center; -webkit-appearance: none; }
+  .input-group input:focus { outline: none; border-color: var(--accent); }
+  .delete-exercise-btn { background: none; border: none; color: #333; font-size: 16px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+  .delete-exercise-btn:hover { color: var(--danger); }
+
+  /* SAVE BUTTON */
+  .save-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; cursor: pointer; margin-top: 16px; transition: all 0.15s; }
+  .save-btn.push { background: var(--push); color: #fff; }
+  .save-btn.pull { background: var(--pull); color: #fff; }
+  .save-btn.legs { background: var(--legs); color: #fff; }
+  .save-btn.sub { background: var(--sub); color: #000; }
+  .save-btn:active { transform: scale(0.97); }
+  .save-btn:disabled { opacity: 0.5; }
+
+  /* CORE */
+  .core-section { background: var(--surface); border-radius: 12px; padding: 14px; margin-top: 12px; border: 1px solid #7f77dd30; }
+  .core-title { font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: #7f77dd; letter-spacing: 2px; margin-bottom: 10px; }
+  .core-item { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .core-item:last-child { border-bottom: none; }
+  .core-item span:last-child { color: var(--accent); font-size: 11px; }
+
+  /* ADD EXERCISE MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: none; align-items: flex-end; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: var(--surface); border-radius: 20px 20px 0 0; padding: 24px 20px 40px; width: 100%; }
+  .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; color: var(--accent); margin-bottom: 16px; }
+  .modal-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px; font-family: 'Noto Sans JP', sans-serif; margin-bottom: 10px; }
+  .modal-input:focus { outline: none; border-color: var(--accent); }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .modal-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-btn { padding: 13px; border-radius: 10px; border: none; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; cursor: pointer; }
+  .modal-btn.cancel { background: var(--surface2); color: var(--text2); }
+  .modal-btn.confirm { background: var(--accent); color: #000; }
+
+  /* KPI */
+  .kpi-card { background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .kpi-card-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; color: var(--accent); margin-bottom: 14px; }
+  .kpi-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .kpi-input-group label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 4px; }
+  .kpi-input-group input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-size: 18px; text-align: center; -webkit-appearance: none; }
+  .kpi-input-group input:focus { outline: none; border-color: var(--accent); }
+  .kpi-save-btn { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--accent); color: #000; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; cursor: pointer; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat-box { background: var(--surface); border-radius: 12px; padding: 16px; border: 1px solid var(--border); text-align: center; }
+  .stat-label { font-size: 10px; color: var(--text2); margin-bottom: 6px; }
+  .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; }
+  .stat-value.weight { color: var(--accent); }
+  .stat-value.waist { color: #5b8dd4; }
+  .stat-change { font-size: 11px; margin-top: 4px; }
+  .stat-change.good { color: var(--legs); }
+  .stat-change.bad { color: var(--danger); }
+  .stat-change.neutral { color: var(--text2); }
+
+  /* PROGRESS */
+  .progress-section { background: var(--surface); border-radius: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .progress-title { font-size: 12px; color: var(--text2); margin-bottom: 10px; }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 99px; height: 8px; margin-bottom: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text2); }
+
+  /* HISTORY */
+  .history-filter { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .history-filter::-webkit-scrollbar { display: none; }
+  .filter-btn { flex-shrink: 0; padding: 7px 14px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-size: 11px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; }
+  .filter-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .history-empty { text-align: center; color: var(--text2); font-size: 13px; padding: 40px 0; }
+  .history-item { background: var(--surface); border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border); }
+  .history-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .history-item-left { display: flex; align-items: center; gap: 10px; }
+  .history-item-type { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; }
+  .history-item-type.PUSH { color: var(--push); }
+  .history-item-type.PULL { color: var(--pull); }
+  .history-item-type.LEGS { color: var(--legs); }
+  .history-item-type.火曜 { color: var(--sub); }
+  .history-item-type.木曜 { color: var(--sub); }
+  .history-item-type.KPI { color: var(--accent); }
+  .history-item-date { font-size: 11px; color: var(--text2); }
+  .delete-record-btn { background: none; border: 1px solid #333; border-radius: 6px; color: #444; font-size: 11px; padding: 4px 8px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; }
+  .delete-record-btn:hover { border-color: var(--danger); color: var(--danger); }
+  .history-exercise { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
+  .history-exercise:last-child { border-bottom: none; }
+  .history-exercise-name { color: var(--text2); flex: 1; }
+  .history-exercise-weight { color: var(--text); font-weight: 500; white-space: nowrap; }
+
+  /* SECTION LABEL */
+  .section-label { font-size: 10px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; margin-top: 20px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #000; padding: 10px 24px; border-radius: 99px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* CONFIRM DIALOG */
+  .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .confirm-overlay.active { display: flex; }
+  .confirm-box { background: var(--surface); border-radius: 16px; padding: 24px; width: 100%; max-width: 300px; text-align: center; }
+  .confirm-title { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+  .confirm-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+  .confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .confirm-btn { padding: 12px; border-radius: 10px; border: none; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; cursor: pointer; }
+  .confirm-btn.cancel { background: var(--surface2); color: var(--text2); }
+  .confirm-btn.danger { background: var(--danger); color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">BODYMAKE</div>
+  <div class="sync-status">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">クラウド接続済み</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active t-push" onclick="switchTab('push')">PUSH</button>
+  <button class="tab t-pull" onclick="switchTab('pull')">PULL</button>
+  <button class="tab t-legs" onclick="switchTab('legs')">LEGS</button>
+  <button class="tab t-sub1" onclick="switchTab('sub1')">火曜</button>
+  <button class="tab t-sub2" onclick="switchTab('sub2')">木曜</button>
+  <button class="tab t-kpi" onclick="switchTab('kpi')">KPI</button>
+  <button class="tab t-history" onclick="switchTab('history')">履歴</button>
+</div>
+
+<!-- PUSH -->
+<div class="section active" id="section-push">
+  <div class="day-header push">
+    <div>
+      <div class="day-title push">PUSH DAY</div>
+      <div class="day-sub">胸・肩・三頭筋 / 60分</div>
+    </div>
+    <button class="add-exercise-btn" onclick="openAddModal('PUSH')">＋ 種目追加</button>
+  </div>
+  <div id="push-exercises"></div>
+  <div class="core-section">
+    <div class="core-title">CORE（必須）</div>
+    <div class="core-item"><span>デッドバグ</span><span>10回 × 3セット</span></div>
+    <div class="core-item"><span>ヒップリフト</span><span>15回 × 3セット</span></div>
+  </div>
+  <button class="save-btn push" id="save-push" onclick="saveWorkout('PUSH')">SAVE PUSH SESSION</button>
+</div>
+
+<!-- PULL -->
+<div class="section" id="section-pull">
+  <div class="day-header pull">
+    <div>
+      <div class="day-title pull">PULL DAY</div>
+      <div class="day-sub">背中・二頭筋 / 60分</div>
+    </div>
+    <button class="add-exercise-btn" onclick="openAddModal('PULL')">＋ 種目追加</button>
+  </div>
+  <div id="pull-exercises"></div>
+  <div class="core-section">
+    <div class="core-title">CORE（必須）</div>
+    <div class="core-item"><span>デッドバグ</span><span>10回 × 3セット</span></div>
+    <div class="core-item"><span>ヒップリフト</span><span>15回 × 3セット</span></div>
+  </div>
+  <button class="save-btn pull" id="save-pull" onclick="saveWorkout('PULL')">SAVE PULL SESSION</button>
+</div>
+
+<!-- LEGS -->
+<div class="section" id="section-legs">
+  <div class="day-header legs">
+    <div>
+      <div class="day-title legs">LEGS DAY</div>
+      <div class="day-sub">脚・体幹 / 60分</div>
+    </div>
+    <button class="add-exercise-btn" onclick="openAddModal('LEGS')">＋ 種目追加</button>
+  </div>
+  <div id="legs-exercises"></div>
+  <div class="core-section">
+    <div class="core-title">CORE（必須）</div>
+    <div class="core-item"><span>デッドバグ</span><span>10回 × 3セット</span></div>
+    <div class="core-item"><span>ヒップリフト</span><span>15回 × 3セット</span></div>
+  </div>
+  <button class="save-btn legs" id="save-legs" onclick="saveWorkout('LEGS')">SAVE LEGS SESSION</button>
+</div>
+
+<!-- SUB1 火曜 -->
+<div class="section" id="section-sub1">
+  <div class="day-header sub">
+    <div>
+      <div class="day-title sub">火曜 DAY</div>
+      <div class="day-sub">肩・腕特化 / 30分</div>
+    </div>
+    <button class="add-exercise-btn" onclick="openAddModal('火曜')">＋ 種目追加</button>
+  </div>
+  <div id="sub1-exercises"></div>
+  <button class="save-btn sub" id="save-sub1" onclick="saveWorkout('火曜')">SAVE 火曜 SESSION</button>
+</div>
+
+<!-- SUB2 木曜 -->
+<div class="section" id="section-sub2">
+  <div class="day-header sub">
+    <div>
+      <div class="day-title sub">木曜 DAY</div>
+      <div class="day-sub">胸・背中特化 / 30分</div>
+    </div>
+    <button class="add-exercise-btn" onclick="openAddModal('木曜')">＋ 種目追加</button>
+  </div>
+  <div id="sub2-exercises"></div>
+  <button class="save-btn sub" id="save-sub2" onclick="saveWorkout('木曜')">SAVE 木曜 SESSION</button>
+</div>
+
+<!-- KPI -->
+<div class="section" id="section-kpi">
+  <div class="section-label">今週の記録</div>
+  <div class="kpi-card">
+    <div class="kpi-card-title">📊 KPI入力</div>
+    <div class="kpi-input-row">
+      <div class="kpi-input-group">
+        <label>体重 (kg)</label>
+        <input type="number" id="input-weight" placeholder="69.5" step="0.1" inputmode="decimal">
+      </div>
+      <div class="kpi-input-group">
+        <label>ウエスト (cm)</label>
+        <input type="number" id="input-waist" placeholder="86" step="0.5" inputmode="decimal">
+      </div>
+    </div>
+    <button class="kpi-save-btn" id="save-kpi" onclick="saveKPI()">KPIを記録する</button>
+  </div>
+
+  <div class="section-label">現在の状態</div>
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-label">体重</div>
+      <div class="stat-value weight" id="current-weight">--</div>
+      <div class="stat-change neutral" id="weight-change">kg</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">ウエスト</div>
+      <div class="stat-value waist" id="current-waist">--</div>
+      <div class="stat-change neutral" id="waist-change">cm</div>
+    </div>
+  </div>
+
+  <div class="section-label">目標進捗</div>
+  <div class="progress-section">
+    <div class="progress-title">体重目標：68kg（開始72kg）</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="weight-progress" style="background:var(--accent);width:0%"></div>
+    </div>
+    <div class="progress-labels"><span>72kg</span><span id="weight-progress-label">0%</span><span>68kg</span></div>
+  </div>
+  <div class="progress-section">
+    <div class="progress-title">ウエスト目標：83cm（開始89cm）</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="waist-progress" style="background:#5b8dd4;width:0%"></div>
+    </div>
+    <div class="progress-labels"><span>89cm</span><span id="waist-progress-label">0%</span><span>83cm</span></div>
+  </div>
+
+  <div class="section-label">KPI履歴</div>
+  <div id="kpi-history-list"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="section" id="section-history">
+  <div class="section-label">トレーニング履歴</div>
+  <div class="history-filter">
+    <button class="filter-btn active" onclick="filterHistory('ALL',this)">ALL</button>
+    <button class="filter-btn" onclick="filterHistory('PUSH',this)">PUSH</button>
+    <button class="filter-btn" onclick="filterHistory('PULL',this)">PULL</button>
+    <button class="filter-btn" onclick="filterHistory('LEGS',this)">LEGS</button>
+    <button class="filter-btn" onclick="filterHistory('火曜',this)">火曜</button>
+    <button class="filter-btn" onclick="filterHistory('木曜',this)">木曜</button>
+  </div>
+  <div id="history-list"></div>
+</div>
+
+<!-- ADD EXERCISE MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">種目を追加</div>
+    <input class="modal-input" id="modal-name" placeholder="種目名（例：ダンベルフライ）" type="text">
+    <input class="modal-input" id="modal-target" placeholder="目標（例：12kg × 10回 × 3セット）" type="text">
+    <div class="modal-row">
+      <div class="input-group">
+        <label>重量 kg</label>
+        <input type="number" id="modal-kg" value="10" step="0.5" inputmode="decimal">
+      </div>
+      <div class="input-group">
+        <label>回数</label>
+        <input type="number" id="modal-reps" value="10" inputmode="numeric">
+      </div>
+      <div class="input-group">
+        <label>セット</label>
+        <input type="number" id="modal-sets" value="3" inputmode="numeric">
+      </div>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-btn cancel" onclick="closeModal()">キャンセル</button>
+      <button class="modal-btn confirm" onclick="confirmAddExercise()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE DIALOG -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">記録を削除しますか？</div>
+    <div class="confirm-sub">この操作は取り消せません</div>
+    <div class="confirm-btns">
+      <button class="confirm-btn cancel" onclick="closeConfirm()">キャンセル</button>
+      <button class="confirm-btn danger" onclick="executeDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKGo9xRwQQGQ9mkyfIgvB-zbLA611w-wZ6pgKBJAl0W35nwdoV136EJHV5ZiwAL7gr/exec';
+
+// DEFAULT MENUS
+const DEFAULT_MENUS = {
+  PUSH: [
+    { name: 'ベンチプレス', target: '62.5kg × 8回 × 3セット', defaultKg: 62.5, defaultReps: 8, defaultSets: 3 },
+    { name: 'インクラインダンベルプレス', target: '20kg × 10回 × 3セット', defaultKg: 20, defaultReps: 10, defaultSets: 3 },
+    { name: 'サイドレイズ', target: '9kg × 12回 × 3セット', defaultKg: 9, defaultReps: 12, defaultSets: 3 },
+    { name: 'プッシュダウン', target: '25kg × 10回 × 3セット', defaultKg: 25, defaultReps: 10, defaultSets: 3 },
+  ],
+  PULL: [
+    { name: 'ラットプルダウン', target: '57kg × 8回 × 3セット', defaultKg: 57, defaultReps: 8, defaultSets: 3 },
+    { name: 'ダンベルロー', target: '18kg × 10回 × 3セット', defaultKg: 18, defaultReps: 10, defaultSets: 3 },
+    { name: 'フェイスプル', target: '23kg × 12回 × 3セット', defaultKg: 23, defaultReps: 12, defaultSets: 3 },
+    { name: 'プリーチャーカール', target: '18kg × 10回 × 3セット', defaultKg: 18, defaultReps: 10, defaultSets: 3 },
+  ],
+  LEGS: [
+    { name: 'スクワット', target: '130kg × 8回 × 3セット', defaultKg: 130, defaultReps: 8, defaultSets: 3 },
+    { name: 'ルーマニアンデッドリフト', target: '70kg × 10回 × 3セット', defaultKg: 70, defaultReps: 10, defaultSets: 3 },
+    { name: 'レッグカール', target: '45kg × 10回 × 3セット', defaultKg: 45, defaultReps: 10, defaultSets: 3 },
+    { name: 'カーフレイズ', target: '75kg × 15回 × 3セット', defaultKg: 75, defaultReps: 15, defaultSets: 3 },
+  ],
+  火曜: [
+    { name: 'サイドレイズ', target: '6kg × 15回 × 4セット', defaultKg: 6, defaultReps: 15, defaultSets: 4 },
+    { name: 'プリーチャーカール', target: '12kg × 15回 × 4セット', defaultKg: 12, defaultReps: 15, defaultSets: 4 },
+  ],
+  木曜: [
+    { name: 'インクラインダンベルプレス', target: '14kg × 15回 × 4セット', defaultKg: 14, defaultReps: 15, defaultSets: 4 },
+    { name: 'ダンベルロー', target: '12kg × 15回 × 4セット', defaultKg: 12, defaultReps: 15, defaultSets: 4 },
+  ],
+};
+
+// STATE
+let menus = JSON.parse(localStorage.getItem('customMenus') || 'null') || JSON.parse(JSON.stringify(DEFAULT_MENUS));
+let workoutHistory = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+let kpiHistory = JSON.parse(localStorage.getItem('kpiHistory') || '[]');
+let currentFilter = 'ALL';
+let currentModalType = '';
+let deleteTargetId = null;
+let deleteTargetType = null;
+
+function saveMenus() { localStorage.setItem('customMenus', JSON.stringify(menus)); }
+
+// INIT
+function init() {
+  renderExercises('PUSH', 'push-exercises');
+  renderExercises('PULL', 'pull-exercises');
+  renderExercises('LEGS', 'legs-exercises');
+  renderExercises('火曜', 'sub1-exercises');
+  renderExercises('木曜', 'sub2-exercises');
+  renderKPIStats();
+  renderKPIHistory();
+  renderHistory();
+}
+
+function renderExercises(type, containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = menus[type].map((ex, i) => `
+    <div class="exercise-card" id="ex-card-${type}-${i}">
+      <div class="exercise-top">
+        <div class="exercise-name-wrap">
+          <div class="exercise-order">0${i+1}</div>
+          <div class="exercise-name">${ex.name}</div>
+        </div>
+        <button class="delete-exercise-btn" onclick="deleteExercise('${type}', ${i})" title="種目を削除">✕</button>
+      </div>
+      <div class="exercise-target">目標: ${ex.target || '—'}</div>
+      <div class="exercise-inputs">
+        <div class="input-group">
+          <label>重量 kg</label>
+          <input type="number" id="${type}-${i}-kg" value="${ex.defaultKg}" step="0.5" inputmode="decimal">
+        </div>
+        <div class="input-group">
+          <label>回数</label>
+          <input type="number" id="${type}-${i}-reps" value="${ex.defaultReps}" inputmode="numeric">
+        </div>
+        <div class="input-group">
+          <label>セット</label>
+          <input type="number" id="${type}-${i}-sets" value="${ex.defaultSets}" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ADD EXERCISE
+function openAddModal(type) {
+  currentModalType = type;
+  document.getElementById('modal-name').value = '';
+  document.getElementById('modal-target').value = '';
+  document.getElementById('modal-kg').value = 10;
+  document.getElementById('modal-reps').value = 10;
+  document.getElementById('modal-sets').value = 3;
+  document.getElementById('modal-overlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+function confirmAddExercise() {
+  const name = document.getElementById('modal-name').value.trim();
+  if (!name) { showToast('種目名を入力してください'); return; }
+  const newEx = {
+    name,
+    target: document.getElementById('modal-target').value.trim(),
+    defaultKg: parseFloat(document.getElementById('modal-kg').value) || 10,
+    defaultReps: parseInt(document.getElementById('modal-reps').value) || 10,
+    defaultSets: parseInt(document.getElementById('modal-sets').value) || 3,
+  };
+  menus[currentModalType].push(newEx);
+  saveMenus();
+  const containerMap = { PUSH: 'push-exercises', PULL: 'pull-exercises', LEGS: 'legs-exercises', 火曜: 'sub1-exercises', 木曜: 'sub2-exercises' };
+  renderExercises(currentModalType, containerMap[currentModalType]);
+  closeModal();
+  showToast(`${name}を追加しました`);
+}
+
+// DELETE EXERCISE
+function deleteExercise(type, index) {
+  menus[type].splice(index, 1);
+  saveMenus();
+  const containerMap = { PUSH: 'push-exercises', PULL: 'pull-exercises', LEGS: 'legs-exercises', 火曜: 'sub1-exercises', 木曜: 'sub2-exercises' };
+  renderExercises(type, containerMap[type]);
+  showToast('種目を削除しました');
+}
+
+// SAVE WORKOUT
+async function saveWorkout(type) {
+  const btnMap = { PUSH: 'save-push', PULL: 'save-pull', LEGS: 'save-legs', 火曜: 'save-sub1', 木曜: 'save-sub2' };
+  const btn = document.getElementById(btnMap[type]);
+  const exercises = menus[type].map((ex, i) => ({
+    name: ex.name,
+    kg: parseFloat(document.getElementById(`${type}-${i}-kg`).value) || 0,
+    reps: parseInt(document.getElementById(`${type}-${i}-reps`).value) || 0,
+    sets: parseInt(document.getElementById(`${type}-${i}-sets`).value) || 0,
+  }));
+  const entry = { id: Date.now(), type, date: new Date().toISOString(), exercises };
+  workoutHistory.unshift(entry);
+  localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
+  renderHistory();
+
+  btn.disabled = true;
+  setSyncStatus('syncing');
+  try {
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, exercises }) });
+    setSyncStatus('ok');
+    showToast(`${type}を記録しました！`);
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('ローカル保存済み（クラウド失敗）');
+  }
+  btn.disabled = false;
+}
+
+// SAVE KPI
+async function saveKPI() {
+  const weight = parseFloat(document.getElementById('input-weight').value);
+  const waist = parseFloat(document.getElementById('input-waist').value);
+  if (!weight && !waist) { showToast('数値を入力してください'); return; }
+  const entry = { id: Date.now(), date: new Date().toISOString(), weight, waist };
+  kpiHistory.unshift(entry);
+  localStorage.setItem('kpiHistory', JSON.stringify(kpiHistory));
+  document.getElementById('input-weight').value = '';
+  document.getElementById('input-waist').value = '';
+  renderKPIStats();
+  renderKPIHistory();
+
+  const btn = document.getElementById('save-kpi');
+  btn.disabled = true;
+  setSyncStatus('syncing');
+  try {
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'KPI', weight, waist }) });
+    setSyncStatus('ok');
+    showToast('KPIを記録しました！');
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('ローカル保存済み（クラウド失敗）');
+  }
+  btn.disabled = false;
+}
+
+// DELETE RECORD
+function confirmDeleteRecord(id, type) {
+  deleteTargetId = id;
+  deleteTargetType = type;
+  document.getElementById('confirm-overlay').classList.add('active');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('active');
+  deleteTargetId = null;
+  deleteTargetType = null;
+}
+
+function executeDelete() {
+  if (deleteTargetType === 'KPI') {
+    kpiHistory = kpiHistory.filter(h => h.id !== deleteTargetId);
+    localStorage.setItem('kpiHistory', JSON.stringify(kpiHistory));
+    renderKPIStats();
+    renderKPIHistory();
+  } else {
+    workoutHistory = workoutHistory.filter(h => h.id !== deleteTargetId);
+    localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
+    renderHistory();
+  }
+  closeConfirm();
+  showToast('記録を削除しました');
+}
+
+// RENDER KPI STATS
+function renderKPIStats() {
+  if (kpiHistory.length === 0) return;
+  const latest = kpiHistory[0];
+  const prev = kpiHistory[1];
+  if (latest.weight) {
+    document.getElementById('current-weight').textContent = latest.weight;
+    if (prev && prev.weight) {
+      const diff = (latest.weight - prev.weight).toFixed(1);
+      const el = document.getElementById('weight-change');
+      el.textContent = (diff > 0 ? '+' : '') + diff + 'kg（先週比）';
+      el.className = 'stat-change ' + (parseFloat(diff) <= 0 ? 'good' : 'bad');
+    }
+    const pct = Math.min(100, Math.max(0, ((72 - latest.weight) / 4) * 100));
+    document.getElementById('weight-progress').style.width = pct + '%';
+    document.getElementById('weight-progress-label').textContent = Math.round(pct) + '%';
+  }
+  if (latest.waist) {
+    document.getElementById('current-waist').textContent = latest.waist;
+    if (prev && prev.waist) {
+      const diff = (latest.waist - prev.waist).toFixed(1);
+      const el = document.getElementById('waist-change');
+      el.textContent = (diff > 0 ? '+' : '') + diff + 'cm（先週比）';
+      el.className = 'stat-change ' + (parseFloat(diff) <= 0 ? 'good' : 'bad');
+    }
+    const pct = Math.min(100, Math.max(0, ((89 - latest.waist) / 6) * 100));
+    document.getElementById('waist-progress').style.width = pct + '%';
+    document.getElementById('waist-progress-label').textContent = Math.round(pct) + '%';
+  }
+}
+
+function renderKPIHistory() {
+  const container = document.getElementById('kpi-history-list');
+  if (kpiHistory.length === 0) { container.innerHTML = '<div class="history-empty">まだ記録がありません</div>'; return; }
+  container.innerHTML = kpiHistory.slice(0, 10).map(entry => `
+    <div class="history-item">
+      <div class="history-item-header">
+        <div class="history-item-left">
+          <div class="history-item-type KPI">KPI</div>
+          <div class="history-item-date">${formatDate(entry.date)}</div>
+        </div>
+        <button class="delete-record-btn" onclick="confirmDeleteRecord(${entry.id}, 'KPI')">削除</button>
+      </div>
+      <div style="display:flex;gap:20px;font-size:13px;">
+        ${entry.weight ? `<span>体重: <strong style="color:var(--accent)">${entry.weight}kg</strong></span>` : ''}
+        ${entry.waist ? `<span>ウエスト: <strong style="color:#5b8dd4">${entry.waist}cm</strong></span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  const filtered = currentFilter === 'ALL' ? workoutHistory : workoutHistory.filter(h => h.type === currentFilter);
+  if (filtered.length === 0) { container.innerHTML = '<div class="history-empty">まだ記録がありません</div>'; return; }
+  container.innerHTML = filtered.slice(0, 30).map(entry => `
+    <div class="history-item">
+      <div class="history-item-header">
+        <div class="history-item-left">
+          <div class="history-item-type ${entry.type}">${entry.type}</div>
+          <div class="history-item-date">${formatDate(entry.date)}</div>
+        </div>
+        <button class="delete-record-btn" onclick="confirmDeleteRecord(${entry.id}, 'workout')">削除</button>
+      </div>
+      ${entry.exercises.map(ex => `
+        <div class="history-exercise">
+          <span class="history-exercise-name">${ex.name}</span>
+          <span class="history-exercise-weight">${ex.kg}kg × ${ex.reps}回 × ${ex.sets}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function filterHistory(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistory();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`section-${tab}`).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const tabMap = { push: 0, pull: 1, legs: 2, sub1: 3, sub2: 4, kpi: 5, history: 6 };
+  document.querySelectorAll('.tab')[tabMap[tab]].classList.add('active');
+}
+
+function setSyncStatus(status) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  dot.className = 'sync-dot';
+  if (status === 'syncing') { dot.classList.add('syncing'); label.textContent = '同期中...'; }
+  else if (status === 'ok') { label.textContent = 'クラウド保存済み'; }
+  else { dot.classList.add('error'); label.textContent = '同期エラー'; }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('ja-JP', { month:'long', day:'numeric', weekday:'short', hour:'2-digit', minute:'2-digit' });
+}
+
+// Close modal on overlay click
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+init();
+</script>
+</body>
+</html>
